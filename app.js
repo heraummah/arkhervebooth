@@ -215,26 +215,45 @@ function takePhoto() {
     flash.className = 'flash fade';
   }));
 
-  // Siapkan canvas seukuran video
-  const W = video.videoWidth;
-  const H = video.videoHeight;
-  captureCanvas.width  = W;
-  captureCanvas.height = H;
+  // Ambil dimensi asli video stream
+  let W = video.videoWidth;
+  let H = video.videoHeight;
+
+  // Fallback kalau stream belum siap (mobile kadang 0x0)
+  if (!W || !H) {
+    W = video.clientWidth  || 1280;
+    H = video.clientHeight || 720;
+  }
+
+  // Di mobile, kamera portrait bisa kasih H > W
+  // Kita selalu capture dalam orientasi landscape (W >= H)
+  const isPortrait = H > W;
+  const CW = isPortrait ? H : W;
+  const CH = isPortrait ? W : H;
+
+  captureCanvas.width  = CW;
+  captureCanvas.height = CH;
 
   const ctx = captureCanvas.getContext('2d');
-
-  // Terapkan filter ke canvas sebelum drawImage
   ctx.filter = getFilterCSS();
 
-  // Gambar video ke canvas — dengan mirror (scaleX -1)
-  // karena CSS mirror tidak ikut ke canvas
+  // Mirror horizontal (selfie feel) + handle portrait rotation
   ctx.save();
-  ctx.translate(W, 0);
-  ctx.scale(-1, 1);
-  ctx.drawImage(video, 0, 0, W, H);
+  if (isPortrait) {
+    // Rotate 90° lalu mirror
+    ctx.translate(CW / 2, CH / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, -CH / 2, -CW / 2, CH, CW);
+  } else {
+    // Landscape normal — mirror saja
+    ctx.translate(CW, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, CW, CH);
+  }
   ctx.restore();
 
-  ctx.filter = 'none'; // reset filter canvas
+  ctx.filter = 'none';
 
   // Ambil hasil sebagai dataURL (base64 JPEG)
   const dataURL = captureCanvas.toDataURL('image/jpeg', 0.92);
@@ -359,11 +378,25 @@ function drawImageCover(ctx, img, dx, dy, dw, dh) {
 }
 
 async function buildStrip() {
-  const PHOTO_W = 800;
-  const PHOTO_H = 450;
   const PAD     = 20;
-  const STRIP_W = PHOTO_W + PAD * 2;
-  const STRIP_H = PHOTO_H * 3 + PAD * 4;
+  const STRIP_W = 840;
+
+  // Load semua foto dulu supaya bisa baca dimensi aslinya
+  const images = await Promise.all(shots.map(src => new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.src = src;
+  })));
+
+  // Tentukan rasio slot dari foto pertama
+  // — pakai rasio asli supaya tidak ada crop paksa
+  const firstW   = images[0].naturalWidth  || images[0].width  || 1280;
+  const firstH   = images[0].naturalHeight || images[0].height || 720;
+  const ratio    = firstW / firstH;
+  const PHOTO_W  = STRIP_W - PAD * 2;
+  const PHOTO_H  = Math.round(PHOTO_W / ratio);   // tinggi ikut rasio foto asli
+
+  const STRIP_H  = PHOTO_H * 3 + PAD * 4;
 
   stripPreviewCanvas.width  = STRIP_W;
   stripPreviewCanvas.height = STRIP_H;
@@ -374,13 +407,10 @@ async function buildStrip() {
   ctx.fillStyle = '#fdf6f0';
   ctx.fillRect(0, 0, STRIP_W, STRIP_H);
 
-  // Gambar tiap foto dengan object-fit: cover — tidak gepeng!
+  // Gambar tiap foto — cover crop supaya proporsional
   for (let i = 0; i < 3; i++) {
-    const img = new Image();
-    img.src = shots[i];
-    await new Promise(resolve => { img.onload = resolve; });
     const y = PAD + i * (PHOTO_H + PAD);
-    drawImageCover(ctx, img, PAD, y, PHOTO_W, PHOTO_H);
+    drawImageCover(ctx, images[i], PAD, y, PHOTO_W, PHOTO_H);
   }
 
   // Render frame aktif di atas tiap foto
