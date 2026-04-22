@@ -225,32 +225,20 @@ function takePhoto() {
     H = video.clientHeight || 720;
   }
 
-  // Di mobile, kamera portrait bisa kasih H > W
-  // Kita selalu capture dalam orientasi landscape (W >= H)
-  const isPortrait = H > W;
-  const CW = isPortrait ? H : W;
-  const CH = isPortrait ? W : H;
-
-  captureCanvas.width  = CW;
-  captureCanvas.height = CH;
+  // Gunakan dimensi video stream apa adanya — JANGAN rotate manual
+  // Browser/OS sudah handle orientasi lewat stream,
+  // rotate manual justru bikin miring di Vercel/production
+  captureCanvas.width  = W;
+  captureCanvas.height = H;
 
   const ctx = captureCanvas.getContext('2d');
   ctx.filter = getFilterCSS();
 
-  // Mirror horizontal (selfie feel) + handle portrait rotation
+  // Mirror horizontal saja (selfie feel) — tanpa rotate
   ctx.save();
-  if (isPortrait) {
-    // Rotate 90° lalu mirror
-    ctx.translate(CW / 2, CH / 2);
-    ctx.rotate(Math.PI / 2);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, -CH / 2, -CW / 2, CH, CW);
-  } else {
-    // Landscape normal — mirror saja
-    ctx.translate(CW, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, CW, CH);
-  }
+  ctx.translate(W, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, 0, 0, W, H);
   ctx.restore();
 
   ctx.filter = 'none';
