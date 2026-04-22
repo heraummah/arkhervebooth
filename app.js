@@ -333,6 +333,31 @@ const stripPreviewCanvas = document.getElementById('strip-preview-canvas');
 const previewHint        = document.querySelector('.preview-hint');
 const btnDownload        = document.getElementById('btn-download');
 
+// Helper: object-fit cover untuk canvas
+// Crop tengah supaya tidak gepeng/stretch
+function drawImageCover(ctx, img, dx, dy, dw, dh) {
+  const srcW     = img.naturalWidth  || img.width;
+  const srcH     = img.naturalHeight || img.height;
+  const srcRatio = srcW / srcH;
+  const dstRatio = dw / dh;
+  let sx, sy, sw, sh;
+
+  if (srcRatio > dstRatio) {
+    // Gambar lebih lebar — crop kiri-kanan, center horizontal
+    sh = srcH;
+    sw = srcH * dstRatio;
+    sx = (srcW - sw) / 2;
+    sy = 0;
+  } else {
+    // Gambar lebih tinggi — crop atas-bawah, center vertical
+    sw = srcW;
+    sh = srcW / dstRatio;
+    sx = 0;
+    sy = (srcH - sh) / 2;
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+}
+
 async function buildStrip() {
   const PHOTO_W = 800;
   const PHOTO_H = 450;
@@ -349,13 +374,13 @@ async function buildStrip() {
   ctx.fillStyle = '#fdf6f0';
   ctx.fillRect(0, 0, STRIP_W, STRIP_H);
 
-  // Gambar tiap foto
+  // Gambar tiap foto dengan object-fit: cover — tidak gepeng!
   for (let i = 0; i < 3; i++) {
     const img = new Image();
     img.src = shots[i];
     await new Promise(resolve => { img.onload = resolve; });
     const y = PAD + i * (PHOTO_H + PAD);
-    ctx.drawImage(img, PAD, y, PHOTO_W, PHOTO_H);
+    drawImageCover(ctx, img, PAD, y, PHOTO_W, PHOTO_H);
   }
 
   // Render frame aktif di atas tiap foto
