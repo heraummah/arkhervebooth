@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rosette Booth 🌹</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
+
+  <!-- CSS kita sendiri -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- DEKORASI BUNGA BACKGROUND -->
+  <div class="bg-roses" aria-hidden="true">
+    <span class="rose r1">🌹</span>
+    <span class="rose r2">🥀</span>
+    <span class="rose r3">🌹</span>
+    <span class="rose r4">🌸</span>
+    <span class="rose r5">🌹</span>
+  </div>
+
+  <!-- WRAPPER UTAMA -->
+  <div class="app">
+
+    <!-- ── HEADER ── -->
+    <header class="header">
+      <h1 class="logo">Rosette <em>Booth</em></h1>
+      <p class="tagline">3-shot · rose edition</p>
+    </header>
+
+    <!-- ── KONTEN UTAMA ── -->
+    <main class="main-layout">
+
+      <!-- KOLOM KIRI: viewfinder + shots -->
+      <section class="left-col">
+
+        <!-- Viewfinder -->
+        <div class="viewfinder-wrap">
+
+          <!-- Live video dari kamera -->
+          <video id="video" autoplay playsinline muted></video>
+
+          <!-- Muncul kalau kamera ditolak / error -->
+          <div class="no-cam" id="no-cam">
+            <span>🚫</span>
+            <p>Izin kamera ditolak.</p>
+            <p class="mono-hint">allow camera di browser kamu</p>
+          </div>
+
+          <!-- Countdown sebelum snap (3..2..1) -->
+          <div class="countdown-display" id="countdown-display">
+            <span class="countdown-num" id="countdown-num">3</span>
+          </div>
+
+          <!-- Overlay frame (SVG) di atas video -->
+          <div class="frame-overlay" id="frame-overlay"></div>
+
+          <!-- Counter: sudah ambil berapa foto -->
+          <div class="shot-counter mono-hint" id="shot-counter">0 / 3</div>
+
+        </div>
+
+        <!-- Tombol aksi -->
+        <div class="controls">
+          <button class="btn-snap" id="btn-snap" disabled>
+            🌹 Snap
+          </button>
+          <button class="btn-outline" id="btn-reset">
+            Reset
+          </button>
+        </div>
+
+        <!-- 3 slot foto -->
+        <div class="shots-label mono-hint">shots</div>
+        <div class="shots-row">
+          <div class="shot-slot" id="slot-0">
+            <span class="slot-num">01</span>
+          </div>
+          <div class="shot-slot" id="slot-1">
+            <span class="slot-num">02</span>
+          </div>
+          <div class="shot-slot" id="slot-2">
+            <span class="slot-num">03</span>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- KOLOM KANAN: sidebar -->
+      <aside class="sidebar">
+
+        <!-- PILIH FRAME -->
+        <div class="sidebar-block">
+          <h2 class="sidebar-title mono-hint">frame</h2>
+          <div class="frame-grid" id="frame-grid">
+            <!-- tombol frame akan di-generate JS nanti,
+                 tapi kita buat dulu placeholder manual -->
+            <button class="frame-btn active">None</button>
+            <button class="frame-btn">Petals</button>
+            <button class="frame-btn">Vine</button>
+            <button class="frame-btn">Dots</button>
+            <button class="frame-btn">Arch</button>
+            <button class="frame-btn">Lace</button>
+          </div>
+        </div>
+
+        <!-- PILIH FILTER -->
+        <div class="sidebar-block">
+          <h2 class="sidebar-title mono-hint">filter</h2>
+          <div class="filter-grid" id="filter-grid">
+            <button class="filter-btn active">
+              <div class="swatch" style="background:#ddd"></div>
+              None
+            </button>
+            <button class="filter-btn">
+              <div class="swatch" style="background:linear-gradient(135deg,#888,#ccc)"></div>
+              Mono
+            </button>
+            <button class="filter-btn">
+              <div class="swatch" style="background:linear-gradient(135deg,#c8896a,#e8c4a0)"></div>
+              Warm
+            </button>
+            <button class="filter-btn">
+              <div class="swatch" style="background:linear-gradient(135deg,#a87878,#e8c0c0)"></div>
+              Rose
+            </button>
+            <button class="filter-btn">
+              <div class="swatch" style="background:linear-gradient(135deg,#b0a0a0,#edddd8)"></div>
+              Faded
+            </button>
+            <button class="filter-btn">
+              <div class="swatch" style="background:linear-gradient(135deg,#e83060,#ffb0c8)"></div>
+              Vivid
+            </button>
+          </div>
+        </div>
+
+        <!-- EXPORT / DOWNLOAD -->
+        <div class="sidebar-block">
+          <h2 class="sidebar-title mono-hint">export</h2>
+          <!-- preview strip akan muncul di sini setelah 3 foto -->
+          <div class="strip-preview-wrap">
+            <canvas id="strip-preview-canvas"></canvas>
+            <p class="preview-hint mono-hint">ambil 3 foto dulu ✨</p>
+          </div>
+          <button class="btn-download" id="btn-download" disabled>
+            ↓ Download Strip
+          </button>
+        </div>
+
+      </aside>
+    </main>
+
+    <!-- Footer kecil -->
+    <footer class="footer">
+      <span class="mono-hint">made with 🌹</span>
+    </footer>
+
+  </div><!-- /app -->
+
+  <!-- canvas tersembunyi untuk capture (JS pakai ini nanti) -->
+  <canvas id="capture-canvas" style="display:none"></canvas>
+
+  <!-- Flash effect overlay -->
+  <div id="flash" class="flash"></div>
+
+  <!-- JS kita — ditaruh di bawah body biar HTML keload dulu -->
+  <script src="app.js"></script>
+
+</body>
+</html>

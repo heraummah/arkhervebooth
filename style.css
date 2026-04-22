@@ -1,0 +1,691 @@
+/* ============================================
+   ROSETTE BOOTH — style.css
+   Tahap 1: Layout & Tema Mawar
+   ============================================ */
+
+/* ── CSS VARIABLES ──
+   Semua warna & font kita definisiin di sini,
+   gampang diganti nanti kalau mau tweak tema */
+:root {
+  --bg:         #fdf6f0;        /* krem hangat */
+  --bg2:        #f5ebe3;        /* sedikit lebih gelap */
+  --ink:        #3a1a1a;        /* coklat tua, bukan pure black */
+  --rose:       #c0485a;        /* merah mawar utama */
+  --rose-light: #e8b4be;        /* merah muda pastel */
+  --rose-pale:  #f9eef0;        /* hampir putih, tint mawar */
+  --line:       #e0cfc8;        /* border lembut */
+  --muted:      #9a7a7a;        /* teks sekunder */
+  --white:      #ffffff;
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-mono:    'DM Mono', 'Courier New', monospace;
+
+  --radius:     6px;
+  --shadow:     0 4px 24px rgba(58, 26, 26, 0.08);
+}
+
+/* ── RESET DASAR ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-display);
+  background-color: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  /* noise texture halus biar ga flat */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+}
+
+/* ── DEKORASI BUNGA BACKGROUND ── */
+.bg-roses {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.rose {
+  position: absolute;
+  font-size: 2rem;
+  opacity: 0.07;
+  animation: floatRose 20s ease-in-out infinite;
+  user-select: none;
+}
+
+/* posisi tiap bunga */
+.r1 { top: 5%;  left: 3%;  font-size: 3rem; animation-delay: 0s;    animation-duration: 22s; }
+.r2 { top: 15%; right: 5%; font-size: 2rem; animation-delay: -5s;   animation-duration: 18s; }
+.r3 { bottom: 10%; left: 8%; font-size: 2.5rem; animation-delay: -10s; animation-duration: 25s; }
+.r4 { top: 50%; right: 2%; font-size: 1.8rem; animation-delay: -3s;  animation-duration: 20s; }
+.r5 { bottom: 20%; right: 10%; font-size: 3.5rem; animation-delay: -7s; animation-duration: 28s; }
+
+@keyframes floatRose {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  33%       { transform: translateY(-18px) rotate(8deg); }
+  66%       { transform: translateY(10px) rotate(-5deg); }
+}
+
+/* ── APP WRAPPER ── */
+.app {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ── HEADER ── */
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 24px 0 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.logo em {
+  font-style: italic;
+  color: var(--rose);
+}
+
+.tagline {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+/* ── MAIN LAYOUT: 2 kolom ── */
+.main-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 24px;
+  padding: 24px 0;
+  flex: 1;
+}
+
+/* ── KOLOM KIRI ── */
+.left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── VIEWFINDER ── */
+.viewfinder-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--ink);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+/* placeholder sebelum kamera aktif */
+.viewfinder-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: rgba(255,255,255,0.5);
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+
+.cam-icon { font-size: 40px; }
+
+/* video element — disembunyiin dulu, JS yang show kalau kamera ready */
+#video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+  transform: scaleX(-1);   /* mirror = natural selfie */
+}
+
+#video.active {
+  display: block;
+}
+
+/* shot counter pojok kanan atas viewfinder */
+.shot-counter {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: rgba(58, 26, 26, 0.5);
+  color: rgba(255,255,255,0.85);
+  padding: 3px 10px;
+  border-radius: 20px;
+  z-index: 10;
+  font-size: 10px;
+}
+
+/* overlay frame — absolute di atas video */
+.frame-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ── CONTROLS ── */
+.controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Tombol utama snap */
+.btn-snap {
+  background: var(--rose);
+  color: white;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  padding: 12px 32px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+  box-shadow: 0 2px 12px rgba(192, 72, 90, 0.3);
+}
+
+.btn-snap:hover:not(:disabled) {
+  background: #a8384a;
+  box-shadow: 0 4px 18px rgba(192, 72, 90, 0.4);
+}
+
+.btn-snap:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn-snap:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Tombol outline */
+.btn-outline {
+  background: transparent;
+  color: var(--ink);
+  border: 1.5px solid var(--line);
+  font-family: var(--font-display);
+  font-size: 14px;
+  padding: 11px 22px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.btn-outline:hover {
+  border-color: var(--rose-light);
+  background: var(--rose-pale);
+}
+
+/* ── SHOTS ROW ── */
+.shots-label {
+  margin-bottom: -8px;
+}
+
+.shots-row {
+  display: flex;
+  gap: 10px;
+}
+
+/* tiap slot foto */
+.shot-slot {
+  flex: 1;
+  aspect-ratio: 16 / 9;
+  background: var(--bg2);
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, border-style 0.2s;
+}
+
+.shot-slot.filled {
+  border-style: solid;
+  border-color: var(--rose-light);
+}
+
+.slot-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* foto yang sudah diambil */
+.shot-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* tombol retake kecil */
+.slot-retake {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  background: rgba(58, 26, 26, 0.65);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 3px 8px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  letter-spacing: 0.05em;
+}
+
+.shot-slot:hover .slot-retake {
+  opacity: 1;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.sidebar-block {
+  padding: 18px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sidebar-block:last-child {
+  border-bottom: none;
+  flex: 1;
+}
+
+.sidebar-title {
+  font-size: 10px;
+  font-weight: 400;
+  margin-bottom: 12px;
+}
+
+/* ── FRAME GRID ── */
+.frame-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+.frame-btn {
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  padding: 10px 4px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  letter-spacing: 0.04em;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.frame-btn:hover {
+  border-color: var(--rose-light);
+  background: var(--rose-pale);
+}
+
+.frame-btn.active {
+  border-color: var(--rose);
+  background: var(--rose-pale);
+  color: var(--rose);
+}
+
+/* ── FILTER GRID ── */
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+.filter-btn {
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  padding: 8px 4px 6px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+  letter-spacing: 0.04em;
+}
+
+.filter-btn:hover {
+  border-color: var(--rose-light);
+}
+
+.filter-btn.active {
+  border-color: var(--rose);
+  background: var(--rose-pale);
+  color: var(--rose);
+}
+
+/* kotak warna kecil di atas label filter */
+.swatch {
+  width: 28px;
+  height: 16px;
+  border-radius: 3px;
+  margin: 0 auto 5px;
+}
+
+/* ── STRIP PREVIEW ── */
+.strip-preview-wrap {
+  background: var(--bg2);
+  border-radius: var(--radius);
+  padding: 10px;
+  margin-bottom: 12px;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+#strip-preview-canvas {
+  width: 100%;
+  display: block;
+  border-radius: 3px;
+}
+
+.preview-hint {
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* tombol download */
+.btn-download {
+  width: 100%;
+  background: var(--ink);
+  color: white;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  padding: 13px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-download:hover:not(:disabled) {
+  background: var(--rose);
+}
+
+.btn-download:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── FOOTER ── */
+.footer {
+  padding: 16px 0;
+  text-align: center;
+  border-top: 1px solid var(--line);
+  margin-top: auto;
+}
+
+/* ── UTILITY: mono hint (label kecil) ── */
+.mono-hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+  text-transform: lowercase;
+}
+
+/* ── FLASH EFFECT ── */
+.flash {
+  position: fixed;
+  inset: 0;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 999;
+  transition: opacity 0.05s;
+}
+
+.flash.go   { opacity: 1; transition: none; }
+.flash.fade { opacity: 0; transition: opacity 0.45s ease; }
+
+/* ── COUNTDOWN ── */
+.countdown-display {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  background: rgba(58, 26, 26, 0.15);
+}
+
+.countdown-display.active {
+  display: flex;
+}
+
+.countdown-num {
+  font-family: var(--font-display);
+  font-size: 100px;
+  font-weight: 300;
+  color: white;
+  text-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  animation: popNum 1s ease;
+}
+
+@keyframes popNum {
+  0%   { transform: scale(1.5); opacity: 0; }
+  20%  { transform: scale(1);   opacity: 1; }
+  80%  { transform: scale(1);   opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0; }
+}
+
+/* ── NO CAMERA STATE ── */
+.no-cam {
+  display: none;
+  position: absolute;
+  inset: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: rgba(255,255,255,0.5);
+  font-size: 13px;
+  text-align: center;
+  padding: 20px;
+}
+
+.no-cam.show {
+  display: flex;
+}
+
+/* ── RESPONSIVE ── */
+
+/* ── TABLET (max 900px) ── */
+@media (max-width: 900px) {
+  .main-layout {
+    grid-template-columns: 1fr 240px;
+    gap: 16px;
+  }
+
+  .sidebar-block {
+    padding: 14px;
+  }
+}
+
+/* ── MOBILE BESAR (max 680px) ── */
+@media (max-width: 680px) {
+  .app {
+    padding: 0 14px;
+  }
+
+  /* Header */
+  .header {
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+    padding: 16px 0 14px;
+  }
+
+  .logo {
+    font-size: 22px;
+  }
+
+  /* Layout jadi 1 kolom, sidebar ke bawah */
+  .main-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px 0;
+  }
+
+  /* Sidebar horizontal scroll di mobile */
+  .sidebar {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    border-radius: var(--radius);
+    /* sembunyikan scrollbar tapi tetap scrollable */
+    scrollbar-width: none;
+  }
+
+  .sidebar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sidebar-block {
+    flex: 0 0 auto;
+    min-width: 180px;
+    border-bottom: none;
+    border-right: 1px solid var(--line);
+    padding: 14px 14px;
+  }
+
+  .sidebar-block:last-child {
+    border-right: none;
+    flex: 0 0 220px;
+  }
+
+  /* Controls */
+  .controls {
+    gap: 8px;
+  }
+
+  .btn-snap {
+    flex: 1;
+    font-size: 15px;
+    padding: 12px 16px;
+  }
+
+  .btn-outline {
+    font-size: 13px;
+    padding: 11px 16px;
+  }
+
+  /* Shots row — scroll horizontal kalau sempit */
+  .shots-row {
+    gap: 8px;
+  }
+
+  .shot-slot {
+    min-width: 80px;
+  }
+
+  /* Countdown lebih kecil */
+  .countdown-num {
+    font-size: 72px;
+  }
+
+  /* Frame & filter grid 2 kolom di mobile */
+  .frame-grid,
+  .filter-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  /* Export block */
+  .btn-download {
+    font-size: 13px;
+    padding: 11px;
+  }
+}
+
+/* ── MOBILE KECIL (max 400px) ── */
+@media (max-width: 400px) {
+  .app {
+    padding: 0 10px;
+  }
+
+  .logo {
+    font-size: 20px;
+  }
+
+  .btn-snap {
+    font-size: 14px;
+    padding: 11px 12px;
+  }
+
+  .shots-row {
+    gap: 6px;
+  }
+
+  .slot-num {
+    font-size: 9px;
+  }
+
+  .countdown-num {
+    font-size: 56px;
+  }
+
+  .sidebar-block {
+    min-width: 160px;
+  }
+
+  .sidebar-block:last-child {
+    flex: 0 0 190px;
+  }
+}
