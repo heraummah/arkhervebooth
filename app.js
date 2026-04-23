@@ -33,7 +33,12 @@ let activeFrame  = 'none';   // frame yang sedang dipilih
 async function startCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+      video: {
+        facingMode: 'user',
+        width:  { ideal: 1280 },
+        height: { ideal: 720 },
+        aspectRatio: { ideal: 16/9 }   // paksa landscape dari awal
+      },
       audio: false
     });
     video.srcObject = stream;
@@ -243,30 +248,25 @@ function takePhoto() {
 
   ctx.filter = 'none';
 
-  // Ambil hasil sebagai dataURL (base64 JPEG)
-  const rawDataURL = captureCanvas.toDataURL('image/jpeg', 0.92);
-
-  // Kalau hasil portrait (H > W), rotate jadi landscape
-  // Caranya: render ke canvas baru yang dimensinya dibalik
+  // Ambil hasil sebagai dataURL
+  // Kalau masih portrait (H > W) — normalize ke landscape
+  let dataURL;
   const finalW = captureCanvas.width;
   const finalH = captureCanvas.height;
 
-  let dataURL;
   if (finalH > finalW) {
-    // Portrait → rotate 90° jadi landscape
-    const rotCanvas = document.createElement('canvas');
-    rotCanvas.width  = finalH;  // swap W dan H
-    rotCanvas.height = finalW;
-    const rotCtx = rotCanvas.getContext('2d');
-
-    // Pivot di tengah, rotate -90° supaya tegak jadi miring kanan
+    // Buat canvas landscape baru (swap dimensi)
+    const rotCanvas    = document.createElement('canvas');
+    rotCanvas.width    = finalH;
+    rotCanvas.height   = finalW;
+    const rotCtx       = rotCanvas.getContext('2d');
+    // Rotate -90° (counter-clockwise) supaya portrait → landscape
     rotCtx.translate(finalH / 2, finalW / 2);
-    rotCtx.rotate(-Math.PI / 2);
+    rotCtx.rotate(Math.PI / 2);
     rotCtx.drawImage(captureCanvas, -finalW / 2, -finalH / 2);
-
     dataURL = rotCanvas.toDataURL('image/jpeg', 0.92);
   } else {
-    dataURL = rawDataURL;
+    dataURL = captureCanvas.toDataURL('image/jpeg', 0.92);
   }
 
   // Simpan ke array dan tampilkan di slot
