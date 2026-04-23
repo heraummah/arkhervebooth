@@ -24,7 +24,6 @@ let currentSlot = 0;
 let isShooting  = false;
 let activeFilter  = 'none';
 let activeFrame   = 'none';
-let ROTATION_MODE = 0;   // 0=CW90, 1=CCW90, 2=CW90+mirror, 3=CCW90+mirror
 
 
 // ================================================================
@@ -36,9 +35,9 @@ async function startCamera() {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: 'user',
-        width:  { ideal: 1280 },
-        height: { ideal: 720 },
-        aspectRatio: { ideal: 16/9 }   // paksa landscape dari awal
+        width:  { ideal: 1280, min: 640 },
+        height: { ideal: 720,  min: 360 },
+        aspectRatio: { ideal: 16/9 }
       },
       audio: false
     });
@@ -46,12 +45,30 @@ async function startCamera() {
     await video.play();
     video.classList.add('active');
     snapBtn.disabled = false;
-    console.log('✅ Kamera aktif!');
+
+    // Setelah stream ready, cek dan handle orientasi
+    handleOrientation();
   } catch (err) {
     console.error('❌ Kamera error:', err.message);
     if (noCam) noCam.classList.add('show');
   }
 }
+
+// Handle perubahan orientasi HP saat app dibuka
+function handleOrientation() {
+  // Paksa viewfinder tetap landscape via CSS transform kalau HP portrait
+  const isPortraitDevice = window.innerHeight > window.innerWidth;
+  if (isPortraitDevice) {
+    // Stream dari kamera sudah landscape (16:9), tapi HP dipegang portrait
+    // Biarkan browser yang handle — video stream tetap landscape
+    // CSS sudah handle via object-fit: cover
+  }
+}
+
+// Dengarkan perubahan orientasi
+window.addEventListener('orientationchange', () => {
+  setTimeout(handleOrientation, 300);
+});
 
 
 // ================================================================
@@ -231,70 +248,38 @@ function takePhoto() {
     H = video.clientHeight || 720;
   }
 
-  // Gunakan dimensi video stream apa adanya — JANGAN rotate manual
-  // Browser/OS sudah handle orientasi lewat stream,
-  // rotate manual justru bikin miring di Vercel/production
-  captureCanvas.width  = W;
-  captureCanvas.height = H;
+  // PAKSA landscape: kalau H > W, swap dimensi canvas
+  // supaya hasil foto selalu landscape apapun orientasi HP
+  const CW = Math.max(W, H);  // selalu yang lebih besar jadi width
+  const CH = Math.min(W, H);  // selalu yang lebih kecil jadi height
+
+  captureCanvas.width  = CW;
+  captureCanvas.height = CH;
 
   const ctx = captureCanvas.getContext('2d');
   ctx.filter = getFilterCSS();
 
-  // Mirror horizontal saja (selfie feel) — tanpa rotate
   ctx.save();
-  ctx.translate(W, 0);
-  ctx.scale(-1, 1);
-  ctx.drawImage(video, 0, 0, W, H);
+  if (H > W) {
+    // HP portrait: stream portrait, rotate ke landscape
+    // Rotate 90° CW: (x,y) → (H-y, x)
+    ctx.translate(CW, 0);
+    ctx.rotate(Math.PI / 2);
+    // Mirror horizontal untuk selfie
+    ctx.translate(0, CH);
+    ctx.scale(1, -1);
+    ctx.drawImage(video, 0, 0, W, H);
+  } else {
+    // HP landscape: langsung mirror horizontal
+    ctx.translate(CW, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, CW, CH);
+  }
   ctx.restore();
 
   ctx.filter = 'none';
 
-  // Ambil hasil — cek apakah perlu dirotate
-  // Deteksi dari stream track settings, bukan dari dimensi canvas
-  const finalW = captureCanvas.width;
-  const finalH = captureCanvas.height;
-
-  let dataURL;
-
-  // Cek orientasi dari video track yang aktif
-  const track = video.srcObject && video.srcObject.getVideoTracks()[0];
-  const settings = track ? track.getSettings() : {};
-  const streamW = settings.width  || finalW;
-  const streamH = settings.height || finalH;
-
-  // Kalau stream landscape tapi canvas-nya juga landscape — cek apakah gambar kebalik
-  // Gunakan ROTATION_MODE untuk test manual
-  if (ROTATION_MODE === 0) {
-    // Tidak ada rotasi tambahan
-    dataURL = captureCanvas.toDataURL('image/jpeg', 0.92);
-  } else {
-    const rotCanvas  = document.createElement('canvas');
-    // Untuk mode 1-3: swap dimensi
-    if (ROTATION_MODE === 1 || ROTATION_MODE === 2 || ROTATION_MODE === 3) {
-      rotCanvas.width  = finalH;
-      rotCanvas.height = finalW;
-    } else {
-      rotCanvas.width  = finalW;
-      rotCanvas.height = finalH;
-    }
-    const rotCtx = rotCanvas.getContext('2d');
-    const rW = rotCanvas.width;
-    const rH = rotCanvas.height;
-    rotCtx.translate(rW / 2, rH / 2);
-
-    if (ROTATION_MODE === 1) {
-      rotCtx.rotate(Math.PI / 2);
-      rotCtx.drawImage(captureCanvas, -finalW / 2, -finalH / 2);
-    } else if (ROTATION_MODE === 2) {
-      rotCtx.rotate(-Math.PI / 2);
-      rotCtx.drawImage(captureCanvas, -finalW / 2, -finalH / 2);
-    } else if (ROTATION_MODE === 3) {
-      rotCtx.rotate(Math.PI);
-      rotCtx.drawImage(captureCanvas, -finalW / 2, -finalH / 2);
-    }
-
-    dataURL = rotCanvas.toDataURL('image/jpeg', 0.92);
-  }
+  const dataURL = captureCanvas.toDataURL('image/jpeg', 0.92);
 
   // Simpan ke array dan tampilkan di slot
   shots[currentSlot] = dataURL;
@@ -376,17 +361,6 @@ resetBtn.addEventListener('click', () => {
 });
 
 
-// ── Tombol debug rotasi (hapus setelah ketemu mode yang benar) ──
-const rotModeLabels = ['rot: none', 'rot: CW90', 'rot: CCW90', 'rot: 180°'];
-const btnRotMode = document.getElementById('btn-rotmode');
-if (btnRotMode) {
-  btnRotMode.addEventListener('click', () => {
-    ROTATION_MODE = (ROTATION_MODE + 1) % 4;
-    btnRotMode.textContent = rotModeLabels[ROTATION_MODE];
-  });
-}
-
-
 // ================================================================
 //  JALANKAN
 // ================================================================
@@ -437,13 +411,10 @@ async function buildStrip() {
     img.src = src;
   })));
 
-  // Tentukan rasio slot dari foto pertama
-  // — pakai rasio asli supaya tidak ada crop paksa
-  const firstW   = images[0].naturalWidth  || images[0].width  || 1280;
-  const firstH   = images[0].naturalHeight || images[0].height || 720;
-  const ratio    = firstW / firstH;
+  // Selalu paksa rasio landscape 4:3 untuk slot foto di strip
+  // supaya hasil strip tidak terlalu panjang di mobile
   const PHOTO_W  = STRIP_W - PAD * 2;
-  const PHOTO_H  = Math.round(PHOTO_W / ratio);   // tinggi ikut rasio foto asli
+  const PHOTO_H  = Math.round(PHOTO_W * 3 / 4);  // 4:3 landscape
 
   const STRIP_H  = PHOTO_H * 3 + PAD * 4;
 
