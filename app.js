@@ -424,7 +424,7 @@ async function buildStrip() {
       tmp.height   = iW;
       const tCtx   = tmp.getContext('2d');
       tCtx.translate(iH / 2, iW / 2);
-      tCtx.rotate(Math.PI / 2);
+      tCtx.rotate(-Math.PI / 2);
       tCtx.drawImage(img, -iW / 2, -iH / 2);
       drawImageCover(ctx, tmp, PAD, y, PHOTO_W, PHOTO_H);
     } else {
