@@ -262,7 +262,7 @@ function takePhoto() {
     const rotCtx       = rotCanvas.getContext('2d');
     // Rotate -90° (counter-clockwise) supaya portrait → landscape
     rotCtx.translate(finalH / 2, finalW / 2);
-    rotCtx.rotate(Math.PI / 2);
+    rotCtx.rotate(-Math.PI / 2);
     rotCtx.drawImage(captureCanvas, -finalW / 2, -finalH / 2);
     dataURL = rotCanvas.toDataURL('image/jpeg', 0.92);
   } else {
