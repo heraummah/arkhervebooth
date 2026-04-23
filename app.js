@@ -248,31 +248,17 @@ function takePhoto() {
     H = video.clientHeight || 720;
   }
 
-  // Selalu capture landscape: swap W/H kalau portrait
-  const CW = Math.max(W, H);
-  const CH = Math.min(W, H);
-
-  captureCanvas.width  = CW;
-  captureCanvas.height = CH;
+  // Capture apa adanya dari stream — NO rotation di sini
+  // Biarkan browser handle orientasi, kita hanya mirror untuk selfie
+  captureCanvas.width  = W;
+  captureCanvas.height = H;
 
   const ctx = captureCanvas.getContext('2d');
   ctx.filter = getFilterCSS();
   ctx.save();
-
-  if (H > W) {
-    // Portrait stream → rotate jadi landscape + mirror selfie
-    // Step: translate ke origin baru, rotate CW 90°, mirror Y, draw
-    ctx.translate(CW / 2, CH / 2);
-    ctx.rotate(Math.PI / 2);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, -CH / 2, -CW / 2, CH, CW);
-  } else {
-    // Landscape stream → mirror horizontal saja
-    ctx.translate(CW, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, CW, CH);
-  }
-
+  ctx.translate(W, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, 0, 0, W, H);
   ctx.restore();
   ctx.filter = 'none';
 
@@ -424,10 +410,26 @@ async function buildStrip() {
   ctx.fillStyle = '#fdf6f0';
   ctx.fillRect(0, 0, STRIP_W, STRIP_H);
 
-  // Gambar tiap foto — cover crop supaya proporsional
+  // Gambar tiap foto — selalu landscape
   for (let i = 0; i < 3; i++) {
-    const y = PAD + i * (PHOTO_H + PAD);
-    drawImageCover(ctx, images[i], PAD, y, PHOTO_W, PHOTO_H);
+    const y   = PAD + i * (PHOTO_H + PAD);
+    const img = images[i];
+    const iW  = img.naturalWidth  || img.width;
+    const iH  = img.naturalHeight || img.height;
+
+    if (iH > iW) {
+      // Foto portrait → rotate dulu ke canvas sementara lalu draw
+      const tmp    = document.createElement('canvas');
+      tmp.width    = iH;   // swap
+      tmp.height   = iW;
+      const tCtx   = tmp.getContext('2d');
+      tCtx.translate(iH / 2, iW / 2);
+      tCtx.rotate(Math.PI / 2);
+      tCtx.drawImage(img, -iW / 2, -iH / 2);
+      drawImageCover(ctx, tmp, PAD, y, PHOTO_W, PHOTO_H);
+    } else {
+      drawImageCover(ctx, img, PAD, y, PHOTO_W, PHOTO_H);
+    }
   }
 
   // Render frame aktif di atas tiap foto
