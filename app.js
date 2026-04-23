@@ -417,19 +417,8 @@ async function buildStrip() {
     const iW  = img.naturalWidth  || img.width;
     const iH  = img.naturalHeight || img.height;
 
-    if (iH > iW) {
-      // Foto portrait → rotate dulu ke canvas sementara lalu draw
-      const tmp    = document.createElement('canvas');
-      tmp.width    = iW;   // 180° tidak perlu swap
-      tmp.height   = iH;
-      const tCtx   = tmp.getContext('2d');
-      tCtx.translate(iW / 2, iH / 2);
-      tCtx.rotate(Math.PI);
-      tCtx.drawImage(img, -iW / 2, -iH / 2);
-      drawImageCover(ctx, tmp, PAD, y, PHOTO_W, PHOTO_H);
-    } else {
-      drawImageCover(ctx, img, PAD, y, PHOTO_W, PHOTO_H);
-    }
+    // Langsung draw — tidak ada rotasi, drawImageCover handle crop
+    drawImageCover(ctx, img, PAD, y, PHOTO_W, PHOTO_H);
   }
 
   // Render frame aktif di atas tiap foto
