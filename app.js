@@ -420,11 +420,11 @@ async function buildStrip() {
     if (iH > iW) {
       // Foto portrait → rotate dulu ke canvas sementara lalu draw
       const tmp    = document.createElement('canvas');
-      tmp.width    = iH;   // swap
-      tmp.height   = iW;
+      tmp.width    = iW;   // 180° tidak perlu swap
+      tmp.height   = iH;
       const tCtx   = tmp.getContext('2d');
-      tCtx.translate(iH / 2, iW / 2);
-      tCtx.rotate(-Math.PI / 2);
+      tCtx.translate(iW / 2, iH / 2);
+      tCtx.rotate(Math.PI);
       tCtx.drawImage(img, -iW / 2, -iH / 2);
       drawImageCover(ctx, tmp, PAD, y, PHOTO_W, PHOTO_H);
     } else {
