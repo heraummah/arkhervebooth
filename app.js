@@ -249,44 +249,51 @@ function takePhoto() {
 
   ctx.filter = 'none';
 
-  // Ambil hasil sebagai dataURL
-  // Kalau masih portrait (H > W) — normalize ke landscape
-  let dataURL;
+  // Ambil hasil — cek apakah perlu dirotate
+  // Deteksi dari stream track settings, bukan dari dimensi canvas
   const finalW = captureCanvas.width;
   const finalH = captureCanvas.height;
 
-  if (finalH > finalW) {
-    // Coba rotasi yang benar berdasarkan ROTATION_MODE di state
+  let dataURL;
+
+  // Cek orientasi dari video track yang aktif
+  const track = video.srcObject && video.srcObject.getVideoTracks()[0];
+  const settings = track ? track.getSettings() : {};
+  const streamW = settings.width  || finalW;
+  const streamH = settings.height || finalH;
+
+  // Kalau stream landscape tapi canvas-nya juga landscape — cek apakah gambar kebalik
+  // Gunakan ROTATION_MODE untuk test manual
+  if (ROTATION_MODE === 0) {
+    // Tidak ada rotasi tambahan
+    dataURL = captureCanvas.toDataURL('image/jpeg', 0.92);
+  } else {
     const rotCanvas  = document.createElement('canvas');
-    rotCanvas.width  = finalH;
-    rotCanvas.height = finalW;
-    const rotCtx     = rotCanvas.getContext('2d');
+    // Untuk mode 1-3: swap dimensi
+    if (ROTATION_MODE === 1 || ROTATION_MODE === 2 || ROTATION_MODE === 3) {
+      rotCanvas.width  = finalH;
+      rotCanvas.height = finalW;
+    } else {
+      rotCanvas.width  = finalW;
+      rotCanvas.height = finalH;
+    }
+    const rotCtx = rotCanvas.getContext('2d');
+    const rW = rotCanvas.width;
+    const rH = rotCanvas.height;
+    rotCtx.translate(rW / 2, rH / 2);
 
-    rotCtx.translate(finalH / 2, finalW / 2);
-
-    if (ROTATION_MODE === 0) {
-      // CW 90°
+    if (ROTATION_MODE === 1) {
       rotCtx.rotate(Math.PI / 2);
-      rotCtx.drawImage(captureCanvas, -finalW / 2, -finalH / 2);
-    } else if (ROTATION_MODE === 1) {
-      // CCW 90°
-      rotCtx.rotate(-Math.PI / 2);
       rotCtx.drawImage(captureCanvas, -finalW / 2, -finalH / 2);
     } else if (ROTATION_MODE === 2) {
-      // CW 90° + mirror
-      rotCtx.rotate(Math.PI / 2);
-      rotCtx.scale(1, -1);
-      rotCtx.drawImage(captureCanvas, -finalW / 2, -finalH / 2);
-    } else {
-      // CCW 90° + mirror
       rotCtx.rotate(-Math.PI / 2);
-      rotCtx.scale(1, -1);
+      rotCtx.drawImage(captureCanvas, -finalW / 2, -finalH / 2);
+    } else if (ROTATION_MODE === 3) {
+      rotCtx.rotate(Math.PI);
       rotCtx.drawImage(captureCanvas, -finalW / 2, -finalH / 2);
     }
 
     dataURL = rotCanvas.toDataURL('image/jpeg', 0.92);
-  } else {
-    dataURL = captureCanvas.toDataURL('image/jpeg', 0.92);
   }
 
   // Simpan ke array dan tampilkan di slot
@@ -370,7 +377,7 @@ resetBtn.addEventListener('click', () => {
 
 
 // ── Tombol debug rotasi (hapus setelah ketemu mode yang benar) ──
-const rotModeLabels = ['rot: CW90', 'rot: CCW90', 'rot: CW90+flip', 'rot: CCW90+flip'];
+const rotModeLabels = ['rot: none', 'rot: CW90', 'rot: CCW90', 'rot: 180°'];
 const btnRotMode = document.getElementById('btn-rotmode');
 if (btnRotMode) {
   btnRotMode.addEventListener('click', () => {
