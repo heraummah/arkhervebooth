@@ -22,8 +22,9 @@ const frameOverlay     = document.getElementById('frame-overlay');
 let shots       = [null, null, null];
 let currentSlot = 0;
 let isShooting  = false;
-let activeFilter = 'none';   // filter yang sedang dipilih
-let activeFrame  = 'none';   // frame yang sedang dipilih
+let activeFilter  = 'none';
+let activeFrame   = 'none';
+let ROTATION_MODE = 0;   // 0=CW90, 1=CCW90, 2=CW90+mirror, 3=CCW90+mirror
 
 
 // ================================================================
@@ -255,15 +256,34 @@ function takePhoto() {
   const finalH = captureCanvas.height;
 
   if (finalH > finalW) {
-    // Buat canvas landscape baru (swap dimensi)
-    const rotCanvas    = document.createElement('canvas');
-    rotCanvas.width    = finalH;
-    rotCanvas.height   = finalW;
-    const rotCtx       = rotCanvas.getContext('2d');
-    // Rotate -90° (counter-clockwise) supaya portrait → landscape
+    // Coba rotasi yang benar berdasarkan ROTATION_MODE di state
+    const rotCanvas  = document.createElement('canvas');
+    rotCanvas.width  = finalH;
+    rotCanvas.height = finalW;
+    const rotCtx     = rotCanvas.getContext('2d');
+
     rotCtx.translate(finalH / 2, finalW / 2);
-    rotCtx.rotate(-Math.PI / 2);
-    rotCtx.drawImage(captureCanvas, -finalW / 2, -finalH / 2);
+
+    if (ROTATION_MODE === 0) {
+      // CW 90°
+      rotCtx.rotate(Math.PI / 2);
+      rotCtx.drawImage(captureCanvas, -finalW / 2, -finalH / 2);
+    } else if (ROTATION_MODE === 1) {
+      // CCW 90°
+      rotCtx.rotate(-Math.PI / 2);
+      rotCtx.drawImage(captureCanvas, -finalW / 2, -finalH / 2);
+    } else if (ROTATION_MODE === 2) {
+      // CW 90° + mirror
+      rotCtx.rotate(Math.PI / 2);
+      rotCtx.scale(1, -1);
+      rotCtx.drawImage(captureCanvas, -finalW / 2, -finalH / 2);
+    } else {
+      // CCW 90° + mirror
+      rotCtx.rotate(-Math.PI / 2);
+      rotCtx.scale(1, -1);
+      rotCtx.drawImage(captureCanvas, -finalW / 2, -finalH / 2);
+    }
+
     dataURL = rotCanvas.toDataURL('image/jpeg', 0.92);
   } else {
     dataURL = captureCanvas.toDataURL('image/jpeg', 0.92);
@@ -347,6 +367,17 @@ resetBtn.addEventListener('click', () => {
     slot.innerHTML = `<span class="slot-num">0${i + 1}</span>`;
   }
 });
+
+
+// ── Tombol debug rotasi (hapus setelah ketemu mode yang benar) ──
+const rotModeLabels = ['rot: CW90', 'rot: CCW90', 'rot: CW90+flip', 'rot: CCW90+flip'];
+const btnRotMode = document.getElementById('btn-rotmode');
+if (btnRotMode) {
+  btnRotMode.addEventListener('click', () => {
+    ROTATION_MODE = (ROTATION_MODE + 1) % 4;
+    btnRotMode.textContent = rotModeLabels[ROTATION_MODE];
+  });
+}
 
 
 // ================================================================
