@@ -394,10 +394,9 @@ async function buildStrip() {
     img.src = src;
   })));
 
-  // Selalu paksa rasio landscape 4:3 untuk slot foto di strip
-  // supaya hasil strip tidak terlalu panjang di mobile
+  // Rasio 9:16 portrait sesuai hasil foto dari kamera mobile
   const PHOTO_W  = STRIP_W - PAD * 2;
-  const PHOTO_H  = Math.round(PHOTO_W * 3 / 4);  // 4:3 landscape
+  const PHOTO_H  = Math.round(PHOTO_W * 9 / 16);  // 9:16 portrait
 
   const STRIP_H  = PHOTO_H * 3 + PAD * 4;
 
