@@ -248,35 +248,32 @@ function takePhoto() {
     H = video.clientHeight || 720;
   }
 
-  // PAKSA landscape: kalau H > W, swap dimensi canvas
-  // supaya hasil foto selalu landscape apapun orientasi HP
-  const CW = Math.max(W, H);  // selalu yang lebih besar jadi width
-  const CH = Math.min(W, H);  // selalu yang lebih kecil jadi height
+  // Selalu capture landscape: swap W/H kalau portrait
+  const CW = Math.max(W, H);
+  const CH = Math.min(W, H);
 
   captureCanvas.width  = CW;
   captureCanvas.height = CH;
 
   const ctx = captureCanvas.getContext('2d');
   ctx.filter = getFilterCSS();
-
   ctx.save();
+
   if (H > W) {
-    // HP portrait: stream portrait, rotate ke landscape
-    // Rotate 90° CW: (x,y) → (H-y, x)
-    ctx.translate(CW, 0);
+    // Portrait stream → rotate jadi landscape + mirror selfie
+    // Step: translate ke origin baru, rotate CW 90°, mirror Y, draw
+    ctx.translate(CW / 2, CH / 2);
     ctx.rotate(Math.PI / 2);
-    // Mirror horizontal untuk selfie
-    ctx.translate(0, CH);
-    ctx.scale(1, -1);
-    ctx.drawImage(video, 0, 0, W, H);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, -CH / 2, -CW / 2, CH, CW);
   } else {
-    // HP landscape: langsung mirror horizontal
+    // Landscape stream → mirror horizontal saja
     ctx.translate(CW, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(video, 0, 0, CW, CH);
   }
-  ctx.restore();
 
+  ctx.restore();
   ctx.filter = 'none';
 
   const dataURL = captureCanvas.toDataURL('image/jpeg', 0.92);
